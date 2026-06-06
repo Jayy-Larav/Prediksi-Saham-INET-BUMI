@@ -301,40 +301,43 @@ def predict_30_days(harga_awal, df, models_reg, models_class, scaler, feature_co
         volatility = np.random.normal(0, 0.01)
         daily_change_trend = daily_change_pct + volatility
         trend_predicted_price = harga_current * (1 + daily_change_trend)
-        
         # Blended price prediction (70% ML, 30% Trend)
         harga_next = 0.7 * ml_predicted_price + 0.3 * trend_predicted_price
         
+        # Apply sentiment multiplier directly to predicted price (for enabled sentiment)
+        if sentiment_trend and hari <= 15:
+            # Positive sentiment boosts price daily, negative depresses it
+            sentiment_effect = 0.012 * sentiment_confidence
+            if sentiment_trend == "NAIK ↑":
+                harga_next = harga_next * (1 + sentiment_effect)
+            elif sentiment_trend == "TURUN ↓":
+                harga_next = harga_next * (1 - sentiment_effect)
+
         # Clamp price movement to max +/- 15% to prevent extreme values
         max_change = harga_current * 0.15
         harga_next = np.clip(harga_next, harga_current - max_change, harga_current + max_change)
         
-        # 3. Get trend prediction and probability from ML classification models (using predict_proba)
+        # 3. Get trend prediction and probability from ML classification models
         trend_probs = []
         for model in models_class.values():
             if hasattr(model, "predict_proba"):
-                # predict_proba returns probability for [class 0, class 1]
                 prob = model.predict_proba(last_row_scaled)[0][1]
             else:
                 prob = model.predict(last_row_scaled)[0]
             trend_probs.append(prob)
         
         trend_prob = np.mean(trend_probs)
-        tren_original = "NAIK ↑" if trend_prob > 0.5 else "TURUN ↓"
-        confidence = abs(trend_prob - 0.5) * 2 * 100
         
-        # Apply sentiment adjustment (only on first few days for strong impact)
-        if sentiment_trend and hari <= 7 and sentiment_confidence > 0.3:
-            if sentiment_trend == "NAIK ↑" and tren_original == "TURUN ↓":
-                tren = sentiment_trend
-                confidence = min(confidence + (sentiment_confidence * 20), 95)
-            elif sentiment_trend == "TURUN ↓" and tren_original == "NAIK ↑":
-                tren = sentiment_trend
-                confidence = min(confidence + (sentiment_confidence * 20), 95)
-            else:
-                tren = tren_original
-        else:
-            tren = tren_original
+        # Adjust trend probability based on sentiment
+        if sentiment_trend and hari <= 15:
+            if sentiment_trend == "NAIK ↑":
+                trend_prob = max(trend_prob, 0.5 + 0.25 * sentiment_confidence)
+            elif sentiment_trend == "TURUN ↓":
+                trend_prob = min(trend_prob, 0.5 - 0.25 * sentiment_confidence)
+
+        # Ensure classification label is consistent with the day-over-day price direction
+        tren = "NAIK ↑" if harga_next >= harga_current else "TURUN ↓"
+        confidence = abs(trend_prob - 0.5) * 2 * 100
         
         # Calculate changes compared to the initial price (harga_awal)
         perubahan_rp = harga_next - harga_awal
