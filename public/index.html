@@ -10,17 +10,25 @@
 </head>
 <body>
 
+  <!-- Ambient Background Blobs -->
+  <div class="bg-glow-container">
+    <div class="bg-glow-blob blob-1"></div>
+    <div class="bg-glow-blob blob-2"></div>
+    <div class="bg-glow-blob blob-3"></div>
+  </div>
+
   <div class="container">
     
     <!-- HEADER -->
     <header class="glass-panel">
       <div class="brand">
         <h1 class="brand-logo">PREDIKSI SAHAM AI</h1>
-        <span class="brand-tag">v2.1 Real-Time News</span>
+        <span class="brand-tag">v2.2 Premium Terminal</span>
       </div>
       <div class="system-status">
         <span class="status-dot"></span>
         <span id="systemStatusText">Sistem Aktif (WIB)</span>
+        <span id="idxClock" style="font-family: var(--font-mono); font-weight: 600; color: var(--color-inet); margin-left: 8px; border-left: 1px solid var(--border-glass); padding-left: 8px; letter-spacing: 0.5px;">--:--:--</span>
       </div>
     </header>
 
@@ -61,9 +69,14 @@
             --
           </div>
         </div>
-        <div class="stock-price-row">
-          <div class="price-current" id="bumiPriceCurrent">Rp --</div>
-          <div class="price-change" id="bumiPriceChange">--</div>
+        <div class="stock-price-row" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <div>
+            <div class="price-current" id="bumiPriceCurrent">Rp --</div>
+            <div class="price-change" id="bumiPriceChange">--</div>
+          </div>
+          <div class="sparkline-wrapper" style="height: 48px; width: 120px; position: relative;">
+            <canvas id="bumiSparkline"></canvas>
+          </div>
         </div>
         <div class="stock-metrics">
           <div class="metric-item">
@@ -92,9 +105,14 @@
             --
           </div>
         </div>
-        <div class="stock-price-row">
-          <div class="price-current" id="inetPriceCurrent">Rp --</div>
-          <div class="price-change" id="inetPriceChange">--</div>
+        <div class="stock-price-row" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <div>
+            <div class="price-current" id="inetPriceCurrent">Rp --</div>
+            <div class="price-change" id="inetPriceChange">--</div>
+          </div>
+          <div class="sparkline-wrapper" style="height: 48px; width: 120px; position: relative;">
+            <canvas id="inetSparkline"></canvas>
+          </div>
         </div>
         <div class="stock-metrics">
           <div class="metric-item">
@@ -197,7 +215,12 @@
           <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass); border-radius: 12px; padding: 16px; text-align: center;">
             <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500; margin-bottom: 6px;">RSI (14-period)</div>
             <div style="font-size: 1.4rem; font-weight: 700; font-family: var(--font-display);" id="indicatorRSI">--</div>
-            <div style="font-size: 0.75rem; font-weight: 600; margin-top: 4px;" id="indicatorRSISignal">NEUTRAL</div>
+            <div style="font-size: 0.75rem; font-weight: 600; margin-top: 2px;" id="indicatorRSISignal">NEUTRAL</div>
+            <!-- Visual RSI scale -->
+            <div class="rsi-meter-container" style="margin-top: 8px; background: rgba(255,255,255,0.05); height: 6px; border-radius: 3px; position: relative; overflow: visible;">
+              <div style="position: absolute; left: 30%; width: 40%; height: 100%; background: rgba(255,255,255,0.1); border-left: 1px dashed rgba(255,255,255,0.2); border-right: 1px dashed rgba(255,255,255,0.2);"></div>
+              <div id="rsiMarker" style="position: absolute; top: -3px; left: 50%; width: 12px; height: 12px; border-radius: 50%; background: var(--color-inet); border: 2.5px solid #111928; transform: translateX(-50%); transition: left 0.4s ease-out;"></div>
+            </div>
           </div>
           <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass); border-radius: 12px; padding: 16px; text-align: center;">
             <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500; margin-bottom: 6px;">Moving Averages</div>

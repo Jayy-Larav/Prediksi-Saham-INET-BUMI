@@ -93,6 +93,44 @@ async function fetchAllData() {
   }
 }
 
+// Render sparkline for stock card
+function renderSparkline(canvasId, history, color) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  
+  const last15 = history.slice(-15);
+  const prices = last15.map(h => h.Close);
+  if (prices.length === 0) return;
+  
+  const existingChart = Chart.getChart(canvas);
+  if (existingChart) {
+    existingChart.destroy();
+  }
+  
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: prices.map((_, i) => i),
+      datasets: [{
+        data: prices,
+        borderColor: color,
+        borderWidth: 2,
+        fill: false,
+        pointRadius: 0,
+        pointHoverRadius: 0,
+        tension: 0.3
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      scales: { x: { display: false }, y: { display: false } },
+      responsive: true,
+      maintainAspectRatio: false
+    }
+  });
+}
+
 // Render stock cards
 function updateStockCards() {
   ['BUMI', 'INET'].forEach(symbol => {
@@ -150,6 +188,9 @@ function updateStockCards() {
       cardSentimentVal.textContent = 'NEUTRAL';
       cardSentimentVal.style.color = 'var(--text-muted)';
     }
+
+    // Render mini sparkline
+    renderSparkline(`${symbol.toLowerCase()}Sparkline`, state.historicalData[symbol], colors[symbol]);
   });
 }
 
@@ -632,6 +673,20 @@ function updateTechnicalSignals() {
   macdSigEl.textContent = indicators.macdSignal;
   overallEl.textContent = indicators.overall;
   
+  // Update RSI marker on the visual meter scale
+  const rsiMarker = document.getElementById('rsiMarker');
+  if (rsiMarker) {
+    const rsiVal = parseFloat(indicators.rsi) || 50;
+    rsiMarker.style.left = `${Math.min(Math.max(rsiVal, 0), 100)}%`;
+    if (indicators.rsiSignal === 'OVERBOUGHT') {
+      rsiMarker.style.backgroundColor = colors.DOWN;
+    } else if (indicators.rsiSignal === 'OVERSOLD') {
+      rsiMarker.style.backgroundColor = colors.UP;
+    } else {
+      rsiMarker.style.backgroundColor = colors[symbol];
+    }
+  }
+
   // Dynamic colors
   if (indicators.rsiSignal === 'OVERBOUGHT') rsiSigEl.style.color = colors.DOWN;
   else if (indicators.rsiSignal === 'OVERSOLD') rsiSigEl.style.color = colors.UP;
@@ -858,8 +913,29 @@ document.addEventListener('DOMContentLoaded', () => {
     runForecastGeneration(hargaBumi, hargaInet);
   });
 
+  // Live clock updating every second
+  function updateLiveClock() {
+    const clockEl = document.getElementById('idxClock');
+    if (!clockEl) return;
+    const now = new Date();
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const jktTime = new Date(utc + (3600000 * 7)); // WIB (UTC+7)
+    
+    const timeStr = jktTime.toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+    clockEl.textContent = `${timeStr} WIB`;
+  }
+
   // Load everything on startup
   fetchAllData();
+  updateLiveClock();
+
+  // Run live clock every second
+  setInterval(updateLiveClock, 1000);
 
   // Set interval to update IDX clock/status every 30 seconds
   setInterval(updateIDXSessionStatus, 30000);
