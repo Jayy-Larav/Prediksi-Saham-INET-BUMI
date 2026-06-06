@@ -188,7 +188,9 @@ class StockDashboardHandler(BaseHTTPRequestHandler):
                     keywords.extend(['energy', 'indonesia energy'])
                 
                 for item in news:
-                    text_to_search = (item.get('title', '') + ' ' + item.get('description', '')).lower()
+                    title = item.get('title') or ''
+                    desc = item.get('description') or ''
+                    text_to_search = (title + ' ' + desc).lower()
                     if any(kw in text_to_search for kw in keywords):
                         filtered_news.append(item)
                 self.send_json(filtered_news)
