@@ -464,23 +464,43 @@ def main():
     days_to_show = 30
     use_sentiment = False
     
-    for i, arg in enumerate(sys.argv[1:]):
-        if arg == '--fetch':
-            fetch_only = True
-        elif arg == '--sentiment':
-            use_sentiment = True
-        elif arg == '--hari' and i+1 < len(sys.argv)-1:
-            days_to_show = int(sys.argv[i+2])
-        elif i == 0:
-            try:
-                harga_bumi = float(arg)
-            except:
-                pass
-        elif i == 1:
-            try:
-                harga_inet = float(arg)
-            except:
-                pass
+    # Extract options and positional arguments
+    args = sys.argv[1:]
+    
+    # 1. Parse --fetch
+    if '--fetch' in args:
+        fetch_only = True
+        args.remove('--fetch')
+        
+    # 2. Parse --sentiment    
+    if '--sentiment' in args:
+        use_sentiment = True
+        args.remove('--sentiment')
+        
+    # 3. Parse --hari <N>
+    if '--hari' in args:
+        try:
+            idx = args.index('--hari')
+            if idx + 1 < len(args):
+                days_to_show = int(args[idx + 1])
+                args.pop(idx + 1)
+                args.pop(idx)
+            else:
+                args.pop(idx)
+        except (ValueError, IndexError):
+            pass
+            
+    # 4. Remaining arguments are positional custom stock prices
+    if len(args) > 0:
+        try:
+            harga_bumi = float(args[0])
+        except ValueError:
+            pass
+    if len(args) > 1:
+        try:
+            harga_inet = float(args[1])
+        except ValueError:
+            pass
     
     print("\n" + "="*100)
     print("🚀 SISTEM PREDIKSI SAHAM BUMI & INET - REAL DATA YFINANCE")
