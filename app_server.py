@@ -18,6 +18,9 @@ PORT = int(os.environ.get('PORT', 8000))
 WORKSPACE_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(WORKSPACE_DIR, 'output')
 
+# Ensure the output directory exists
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
 def read_csv_to_json(filepath):
     """Safely reads CSV file and converts it to list of dicts"""
     if not os.path.exists(filepath):

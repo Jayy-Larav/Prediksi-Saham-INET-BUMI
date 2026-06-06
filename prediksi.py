@@ -15,12 +15,16 @@ Usage:
 
 import sys
 import io
+import os
 
 # Reconfigure standard streams to support UTF-8 encoding safely
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
 if hasattr(sys.stderr, 'reconfigure'):
     sys.stderr.reconfigure(encoding='utf-8')
+
+# Ensure output directory exists for saving predictions and evaluation plots
+os.makedirs('output', exist_ok=True)
 
 import pandas as pd
 import numpy as np
