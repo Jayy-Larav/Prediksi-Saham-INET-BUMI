@@ -198,8 +198,13 @@ function updateStockCards() {
 function updateChart() {
   const symbol = state.activeStock;
   const history = state.historicalData[symbol];
-  const preds = state.predictions.filter(p => p.Saham === symbol);
-  
+  const allPreds = state.predictions.filter(p => p.Saham === symbol);
+
+  // Read user-chosen horizon from paramDays input (default 30)
+  const daysInput = document.getElementById('paramDays');
+  const selectedDays = daysInput ? Math.min(Math.max(parseInt(daysInput.value) || 30, 1), 30) : 30;
+  const preds = allPreds.slice(0, selectedDays);
+
   if (!history || history.length === 0) {
     logConsole(`No historical data to draw chart for ${symbol}`, true);
     return;
@@ -217,20 +222,21 @@ function updateChart() {
   if (state.chartView === 'price') {
     const histDataset = [];
     const predDataset = [];
-    
-    // Historical Close Prices (last 60 days)
-    const lastN = history.slice(-60);
+
+    // Historical Close Prices — show enough context (2× selected days, min 30)
+    const histWindow = Math.max(selectedDays * 2, 30);
+    const lastN = history.slice(-histWindow);
     lastN.forEach(item => {
       labels.push(item.Date);
       histDataset.push(item.Close);
       predDataset.push(null);
     });
 
-    // Predictions
+    // Predictions sliced to selectedDays
     if (preds.length > 0) {
       const lastHistPrice = histDataset[histDataset.length - 1];
       predDataset[predDataset.length - 1] = lastHistPrice;
-      
+
       preds.forEach(item => {
         labels.push(item.Tanggal);
         histDataset.push(null);
@@ -255,7 +261,7 @@ function updateChart() {
             fill: true
           },
           {
-            label: `Prediksi AI 30 Hari`,
+            label: `Prediksi AI ${selectedDays} Hari`,
             data: predDataset,
             borderColor: colors.DOWN,
             borderDash: [6, 4],
@@ -940,6 +946,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load everything on startup
   fetchAllData();
   updateLiveClock();
+
+  // Redraw chart immediately whenever user changes the day horizon input
+  const paramDaysEl = document.getElementById('paramDays');
+  if (paramDaysEl) {
+    paramDaysEl.addEventListener('input', () => {
+      updateChart();
+    });
+    paramDaysEl.addEventListener('change', () => {
+      updateChart();
+    });
+  }
 
   // Run live clock every second
   setInterval(updateLiveClock, 1000);
