@@ -48,7 +48,7 @@ except ImportError:
     sys.exit(1)
 
 from config_api import (
-    NEWSAPI_KEY, SEARCH_KEYWORDS, SENTIMENT_THRESHOLDS,
+    NEWSAPI_KEY, FINNHUB_KEY, SEARCH_KEYWORDS, SENTIMENT_THRESHOLDS,
     NEWS_UPDATE_INTERVAL, NEWS_DB_FILE, SENTIMENT_HISTORY_FILE,
     LOG_FILE, setup_newsapi, log_message
 )
@@ -68,22 +68,65 @@ class RealNewsAPI:
         self.news_cache = {}
         self.last_update = {}
         
+    def fetch_finnhub(self, query, limit=30):
+        """Fetch live general financial news from Finnhub and filter locally by query keywords"""
+        if not FINNHUB_KEY:
+            return []
+            
+        url = "https://finnhub.io/api/v1/news"
+        params = {
+            'category': 'general',
+            'token': FINNHUB_KEY
+        }
+        
+        try:
+            response = self.session.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            articles = response.json()
+            
+            # Filter articles containing query keywords in title or summary
+            q = query.lower()
+            related_keywords = [q]
+            if 'bumi' in q or 'coal' in q or 'resources' in q:
+                related_keywords.extend(['coal', 'mining', 'commodity', 'commodities', 'energy', 'power', 'resources'])
+            if 'inet' in q or 'oil' in q or 'energy' in q:
+                related_keywords.extend(['oil', 'gas', 'energy', 'crude', 'petroleum', 'fuel', 'drill', 'drilling'])
+                
+            matched = []
+            for item in articles:
+                headline = item.get('headline', '')
+                summary = item.get('summary', '')
+                text = (headline + " " + summary).lower()
+                
+                if any(kw in text for kw in related_keywords):
+                    import time
+                    pub_time = datetime.fromtimestamp(item.get('datetime', time.time())).strftime('%Y-%m-%dT%H:%M:%SZ')
+                    matched.append({
+                        'source': item.get('source', 'Finnhub'),
+                        'title': headline,
+                        'description': summary,
+                        'content': summary,
+                        'url': item.get('url', ''),
+                        'image': item.get('image', ''),
+                        'publishedAt': pub_time,
+                        'author': item.get('source', 'Finnhub')
+                    })
+            print(f"  Finnhub search for '{query}' found {len(matched)} matching live articles.")
+            return matched[:limit]
+            
+        except Exception as e:
+            print(f"  ❌ Finnhub request failed: {str(e)[:60]}")
+            return []
+
     def fetch_everything(self, query, language='en', limit=50):
         """
-        Fetch news dari NewsAPI - Everything endpoint
-        
-        Args:
-            query: Search keyword (BUMI, INET, dll)
-            language: 'en' or 'id'
-            limit: Jumlah artikel max
-        
-        Returns:
-            List of news articles
+        Fetch news dari NewsAPI - Everything endpoint, falling back to Finnhub + Mock DB if rate-limited.
         """
-        
         if not self.api_key:
-            print(f"  ⚠️  NewsAPI key tidak ada, gunakan fallback...")
-            return self.fetch_fallback(query, limit)
+            print(f"  ⚠️  NewsAPI key tidak ada, gunakan Finnhub + fallback...")
+            finnhub_news = self.fetch_finnhub(query, limit)
+            fallback_news = self.fetch_fallback(query, limit)
+            return finnhub_news + fallback_news
         
         url = f"{self.BASE_URL}/everything"
         params = {
@@ -101,8 +144,10 @@ class RealNewsAPI:
             
             if data.get('status') == 'error':
                 error_msg = data.get('message', 'Unknown error')
-                print(f"  ❌ NewsAPI error: {error_msg}")
-                return self.fetch_fallback(query, limit)
+                print(f"  ❌ NewsAPI error: {error_msg}, falling back to Finnhub + fallback...")
+                finnhub_news = self.fetch_finnhub(query, limit)
+                fallback_news = self.fetch_fallback(query, limit)
+                return finnhub_news + fallback_news
             
             articles = data.get('articles', [])
             
@@ -110,7 +155,7 @@ class RealNewsAPI:
             formatted = []
             for article in articles:
                 formatted.append({
-                    'source': 'NewsAPI',
+                    'source': article.get('source', {}).get('name', 'NewsAPI') if isinstance(article.get('source'), dict) else article.get('source', 'NewsAPI'),
                     'title': article.get('title', ''),
                     'description': article.get('description', ''),
                     'content': article.get('content', ''),
@@ -123,8 +168,10 @@ class RealNewsAPI:
             return formatted
             
         except requests.exceptions.RequestException as e:
-            print(f"  ❌ API request failed: {str(e)[:60]}")
-            return self.fetch_fallback(query, limit)
+            print(f"  ❌ NewsAPI request failed: {str(e)[:60]}, falling back to Finnhub + fallback...")
+            finnhub_news = self.fetch_finnhub(query, limit)
+            fallback_news = self.fetch_fallback(query, limit)
+            return finnhub_news + fallback_news
     
     def fetch_fallback(self, query, limit=20):
         """Fallback jika NewsAPI tidak tersedia, mengembalikan berita mock yang sangat detail dan bervariasi"""

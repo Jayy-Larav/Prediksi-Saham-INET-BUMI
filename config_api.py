@@ -13,6 +13,7 @@ from datetime import datetime
 # ============================================================================
 # Get FREE API key dari: https://newsapi.org/ (free tier = 100 requests/day)
 NEWSAPI_KEY = os.environ.get('NEWSAPI_KEY', "bd4abc51085b47a9bbe5f0d95496facf")  # Safe: environment variable only
+FINNHUB_KEY = os.environ.get('FINNHUB_KEY', "d8i1l79r01qm63b97k80d8i1l79r01qm63b97k8g")
 
 # ============================================================================
 # STOCK METADATA (BUMI, INET)
