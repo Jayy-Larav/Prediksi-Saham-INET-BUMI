@@ -12,7 +12,12 @@ from datetime import datetime
 # NEWSAPI Configuration
 # ============================================================================
 # Get FREE API key dari: https://newsapi.org/ (free tier = 100 requests/day)
-NEWSAPI_KEY = os.environ.get('NEWSAPI_KEY', "bd4abc51085b47a9bbe5f0d95496facf")  # Safe: environment variable only
+# Mendukung multiple API keys untuk menghindari rate limit 429
+NEWSAPI_KEYS = [
+    os.environ.get('NEWSAPI_KEY', "bd4abc51085b47a9bbe5f0d95496facf"),
+    os.environ.get('NEWSAPI_KEY_2', "8bb3e95ed2f2478cbff98d8a12d91150")
+]
+NEWSAPI_KEY = NEWSAPI_KEYS[0]
 FINNHUB_KEY = os.environ.get('FINNHUB_KEY', "d8i1l79r01qm63b97k80d8i1l79r01qm63b97k8g")
 
 # ============================================================================
@@ -80,7 +85,8 @@ def log_message(message):
 
 def setup_newsapi():
     """Check & setup NewsAPI key"""
-    if not NEWSAPI_KEY:
+    valid_keys = [k for k in NEWSAPI_KEYS if k and k.strip()]
+    if not valid_keys:
         print("\n⚠️  NEWSAPI_KEY tidak ditemukan!")
         print("Cara setup:")
         print("1. Daftar gratis di: https://newsapi.org/")
@@ -88,7 +94,7 @@ def setup_newsapi():
         print("3. Set environment variable:")
         print("   Windows: set NEWSAPI_KEY=your-key-here")
         print("   Linux/Mac: export NEWSAPI_KEY=your-key-here")
-        print("4. Atau edit file ini dan set NEWSAPI_KEY secara langsung")
+        print("4. Atau edit file ini dan set NEWSAPI_KEYS secara langsung")
         print("\n💡 Tanpa key, sistem akan gunakan fallback (limited)")
         return False
     return True

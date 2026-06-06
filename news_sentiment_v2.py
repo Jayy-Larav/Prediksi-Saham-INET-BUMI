@@ -48,7 +48,7 @@ except ImportError:
     sys.exit(1)
 
 from config_api import (
-    NEWSAPI_KEY, FINNHUB_KEY, SEARCH_KEYWORDS, SENTIMENT_THRESHOLDS,
+    NEWSAPI_KEY, NEWSAPI_KEYS, FINNHUB_KEY, SEARCH_KEYWORDS, SENTIMENT_THRESHOLDS,
     NEWS_UPDATE_INTERVAL, NEWS_DB_FILE, SENTIMENT_HISTORY_FILE,
     LOG_FILE, setup_newsapi, log_message
 )
@@ -62,8 +62,13 @@ class RealNewsAPI:
     
     BASE_URL = "https://newsapi.org/v2"
     
-    def __init__(self, api_key=None):
-        self.api_key = api_key or NEWSAPI_KEY
+    def __init__(self, api_key=None, api_keys=None):
+        if api_keys:
+            self.api_keys = api_keys
+        elif api_key:
+            self.api_keys = [api_key]
+        else:
+            self.api_keys = NEWSAPI_KEYS
         self.session = requests.Session()
         self.news_cache = {}
         self.last_update = {}
@@ -120,58 +125,72 @@ class RealNewsAPI:
 
     def fetch_everything(self, query, language='en', limit=50):
         """
-        Fetch news dari NewsAPI - Everything endpoint, falling back to Finnhub + Mock DB if rate-limited.
+        Fetch news dari NewsAPI dan Finnhub secara bersamaan, dikombinasikan dengan fallback mock DB.
         """
-        if not self.api_key:
-            print(f"  ⚠️  NewsAPI key tidak ada, gunakan Finnhub + fallback...")
-            finnhub_news = self.fetch_finnhub(query, limit)
-            fallback_news = self.fetch_fallback(query, limit)
-            return finnhub_news + fallback_news
+        all_articles = []
         
-        url = f"{self.BASE_URL}/everything"
-        params = {
-            'q': query,
-            'sortBy': 'publishedAt',
-            'language': language,
-            'pageSize': min(limit, 100),
-            'apiKey': self.api_key
-        }
+        # 1. Ambil dari Finnhub jika key ada
+        finnhub_articles = []
+        if FINNHUB_KEY:
+            finnhub_articles = self.fetch_finnhub(query, limit=limit)
+            all_articles.extend(finnhub_articles)
+            
+        # 2. Ambil dari NewsAPI jika key ada (looping semua keys untuk fallback jika limit)
+        newsapi_articles = []
+        if self.api_keys:
+            for i, key in enumerate(self.api_keys):
+                if not key:
+                    continue
+                url = f"{self.BASE_URL}/everything"
+                params = {
+                    'q': query,
+                    'sortBy': 'publishedAt',
+                    'language': language,
+                    'pageSize': min(limit, 100),
+                    'apiKey': key
+                }
+                try:
+                    response = self.session.get(url, params=params, timeout=10)
+                    if response.status_code == 200:
+                        data = response.json()
+                        if data.get('status') == 'ok':
+                            articles = data.get('articles', [])
+                            for article in articles:
+                                newsapi_articles.append({
+                                    'source': article.get('source', {}).get('name', 'NewsAPI') if isinstance(article.get('source'), dict) else article.get('source', 'NewsAPI'),
+                                    'title': article.get('title', ''),
+                                    'description': article.get('description', ''),
+                                    'content': article.get('content', ''),
+                                    'url': article.get('url', ''),
+                                    'image': article.get('urlToImage', ''),
+                                    'publishedAt': article.get('publishedAt', ''),
+                                    'author': article.get('author', 'Unknown')
+                                })
+                            print(f"  ✅ NewsAPI fetch successful using key {i+1}/{len(self.api_keys)}")
+                            break  # Sukses, hentikan loop key
+                        else:
+                            print(f"  ⚠️ NewsAPI error using key {i+1}: {data.get('message', 'Unknown error')}")
+                    elif response.status_code == 429:
+                        print(f"  ⚠️ NewsAPI key {i+1} hit rate limit (429). Trying next key...")
+                    else:
+                        print(f"  ⚠️ NewsAPI key {i+1} failed with status {response.status_code}. Trying next key...")
+                except Exception as e:
+                    print(f"  ⚠️ NewsAPI request failed for key {i+1}: {str(e)[:60]}")
+                
+        all_articles.extend(newsapi_articles)
         
-        try:
-            response = self.session.get(url, params=params, timeout=10)
-            response.raise_for_status()
-            data = response.json()
-            
-            if data.get('status') == 'error':
-                error_msg = data.get('message', 'Unknown error')
-                print(f"  ❌ NewsAPI error: {error_msg}, falling back to Finnhub + fallback...")
-                finnhub_news = self.fetch_finnhub(query, limit)
-                fallback_news = self.fetch_fallback(query, limit)
-                return finnhub_news + fallback_news
-            
-            articles = data.get('articles', [])
-            
-            # Format articles
-            formatted = []
-            for article in articles:
-                formatted.append({
-                    'source': article.get('source', {}).get('name', 'NewsAPI') if isinstance(article.get('source'), dict) else article.get('source', 'NewsAPI'),
-                    'title': article.get('title', ''),
-                    'description': article.get('description', ''),
-                    'content': article.get('content', ''),
-                    'url': article.get('url', ''),
-                    'image': article.get('urlToImage', ''),
-                    'publishedAt': article.get('publishedAt', ''),
-                    'author': article.get('author', 'Unknown')
-                })
-            
-            return formatted
-            
-        except requests.exceptions.RequestException as e:
-            print(f"  ❌ NewsAPI request failed: {str(e)[:60]}, falling back to Finnhub + fallback...")
-            finnhub_news = self.fetch_finnhub(query, limit)
-            fallback_news = self.fetch_fallback(query, limit)
-            return finnhub_news + fallback_news
+        # 3. Selalu tambahkan data fallback mock agar feed penuh dan terisi informasi lokal relevan
+        fallback_articles = self.fetch_fallback(query, limit=limit)
+        all_articles.extend(fallback_articles)
+        
+        # Hapus duplikasi berdasarkan judul artikel
+        unique_articles = {}
+        for article in all_articles:
+            title_key = article['title'].strip().lower()
+            if title_key not in unique_articles:
+                unique_articles[title_key] = article
+                
+        return list(unique_articles.values())[:limit]
     
     def fetch_fallback(self, query, limit=20):
         """Fallback jika NewsAPI tidak tersedia, mengembalikan berita mock yang sangat detail dan bervariasi"""
