@@ -150,17 +150,22 @@ function updateStockCards() {
     cardPriceCurrent.textContent = `Rp ${currentPrice.toFixed(2)}`;
 
     if (preds.length > 0) {
-      const targetDay30 = preds[preds.length - 1]; // 30th day projection
-      const day1 = preds[0];
-      const changeRp = targetDay30.Harga_Prediksi - currentPrice;
+      const targetDay = preds[preds.length - 1]; // Latest prediction day projection
+      const changeRp = targetDay.Harga_Prediksi - currentPrice;
       const changePercent = (changeRp / currentPrice) * 100;
       
+      // Update labels
+      const targetLabel = cardPriceTarget.previousElementSibling;
+      if (targetLabel) {
+        targetLabel.textContent = `Target ${preds.length} Hari`;
+      }
+      
       // Update values
-      cardPriceTarget.textContent = `Rp ${targetDay30.Harga_Prediksi.toFixed(2)}`;
-      cardConfidence.textContent = `${targetDay30.Confidence.toFixed(1)}%`;
+      cardPriceTarget.textContent = `Rp ${targetDay.Harga_Prediksi.toFixed(2)}`;
+      cardConfidence.textContent = `${targetDay.Confidence.toFixed(1)}%`;
       
       // Trend Badge
-      const overallTrend = targetDay30.Harga_Prediksi >= currentPrice ? 'NAIK ↑' : 'TURUN ↓';
+      const overallTrend = targetDay.Harga_Prediksi >= currentPrice ? 'NAIK ↑' : 'TURUN ↓';
       cardTrendBadge.textContent = overallTrend;
       
       if (overallTrend.includes('NAIK')) {
@@ -202,8 +207,17 @@ function updateChart() {
 
   // Read user-chosen horizon from paramDays input (default 30)
   const daysInput = document.getElementById('paramDays');
-  const selectedDays = daysInput ? Math.min(Math.max(parseInt(daysInput.value) || 30, 1), 30) : 30;
+  const selectedDays = Math.min(
+    daysInput ? Math.min(Math.max(parseInt(daysInput.value) || 30, 1), 30) : 30,
+    allPreds.length > 0 ? allPreds.length : 30
+  );
   const preds = allPreds.slice(0, selectedDays);
+
+  // Update chart panel title
+  const chartTitleEl = document.querySelector('.chart-panel .panel-title');
+  if (chartTitleEl) {
+    chartTitleEl.innerHTML = `<span>📈</span> Proyeksi Harga & Prediksi ${selectedDays} Hari ke Depan`;
+  }
 
   if (!history || history.length === 0) {
     logConsole(`No historical data to draw chart for ${symbol}`, true);
@@ -796,12 +810,15 @@ function updateUI() {
 async function runForecastGeneration(hargaBumi = null, hargaInet = null) {
   const loader = document.getElementById('chartLoader');
   const runBtn = document.getElementById('btnGenerateCustomForecast');
-  
+  const days = parseInt(document.getElementById('paramDays').value || 30);
+  const loaderText = loader.querySelector('p');
+  if (loaderText) {
+    loaderText.textContent = `Memproses Prediksi ${days} Hari ke Depan...`;
+  }
   loader.style.display = 'flex';
   runBtn.disabled = true;
   
   const sentiment = document.getElementById('paramUseSentiment').checked;
-  const days = parseInt(document.getElementById('paramDays').value || 30);
   
   logConsole(`Running ML forecast generation (Custom Prices BUMI: ${hargaBumi}, INET: ${hargaInet}, Sentiment: ${sentiment}, Hari: ${days})...`);
   

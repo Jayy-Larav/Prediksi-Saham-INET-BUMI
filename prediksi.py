@@ -267,8 +267,8 @@ def train_models(df, nama_saham='UNKNOWN'):
 # 4. PREDICT 30 DAYS
 # ============================================================================
 
-def predict_30_days(harga_awal, df, models_reg, models_class, scaler, feature_cols, nama_saham='UNKNOWN', sentiment_data=None):
-    """Predict next 30 days with optional sentiment adjustment"""
+def predict_30_days(harga_awal, df, models_reg, models_class, scaler, feature_cols, nama_saham='UNKNOWN', sentiment_data=None, days=30):
+    """Predict next N days with optional sentiment adjustment"""
     
     # Get recent 30 days data for trend analysis
     recent_30 = df.tail(30)
@@ -286,7 +286,7 @@ def predict_30_days(harga_awal, df, models_reg, models_class, scaler, feature_co
     # We make a copy of df to append predictions recursively
     df_running = df.copy()
     
-    for hari in range(1, 31):
+    for hari in range(1, days + 1):
         # 1. Get the feature values for the latest available date
         last_row = df_running.iloc[-1][feature_cols].fillna(0).values.reshape(1, -1)
         last_row_scaled = scaler.transform(last_row)
@@ -627,11 +627,11 @@ def main():
             print(" ⚠️  No articles found")
     
     # Predict
-    print("\n🔮 Generating predictions...")
+    print(f"\n🔮 Generating predictions for {days_to_show} days...")
     pred_bumi = predict_30_days(harga_bumi, df_bumi_pred, models_reg_bumi, models_class_bumi, 
-                                 scaler_bumi, features, 'BUMI', sentiment_bumi)
+                                 scaler_bumi, features, 'BUMI', sentiment_bumi, days=days_to_show)
     pred_inet = predict_30_days(harga_inet, df_inet_pred, models_reg_inet, models_class_inet, 
-                                 scaler_inet, features, 'INET', sentiment_inet)
+                                 scaler_inet, features, 'INET', sentiment_inet, days=days_to_show)
     
     all_predictions = pred_bumi + pred_inet
     
