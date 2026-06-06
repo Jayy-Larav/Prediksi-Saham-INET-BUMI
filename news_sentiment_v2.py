@@ -359,7 +359,7 @@ class RealNewsAPI:
         for stock in stocks:
             keywords = SEARCH_KEYWORDS.get(stock, [stock])
             for keyword in keywords:
-                articles = self.fetch_everything(keyword, limit=20)
+                articles = self.fetch_everything(keyword, limit=500)
                 all_news.extend(articles)
         
         # Remove duplicates
@@ -732,7 +732,7 @@ def display_real_sentiment(stocks=['BUMI', 'INET']):
         
         for keyword in keywords:
             print(f"  Searching '{keyword}'...", end='')
-            articles = news_api.fetch_everything(keyword, limit=15)
+            articles = news_api.fetch_everything(keyword, limit=500)
             all_articles.extend(articles)
             print(f" ✅ ({len(articles)} found)")
         

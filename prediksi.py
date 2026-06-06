@@ -588,7 +588,7 @@ def main():
         keywords_bumi = SEARCH_KEYWORDS.get('BUMI', ['BUMI'])
         articles_bumi = []
         for kw in keywords_bumi:
-            articles_bumi.extend(news_api.fetch_everything(kw, limit=100))
+            articles_bumi.extend(news_api.fetch_everything(kw, limit=500))
         if articles_bumi:
             res_bumi = analyzer.aggregate_articles(articles_bumi)
             conf_bumi = confidence_calc.calculate_trend_confidence(res_bumi)
@@ -611,7 +611,7 @@ def main():
         keywords_inet = SEARCH_KEYWORDS.get('INET', ['INET'])
         articles_inet = []
         for kw in keywords_inet:
-            articles_inet.extend(news_api.fetch_everything(kw, limit=100))
+            articles_inet.extend(news_api.fetch_everything(kw, limit=500))
         if articles_inet:
             res_inet = analyzer.aggregate_articles(articles_inet)
             conf_inet = confidence_calc.calculate_trend_confidence(res_inet)
