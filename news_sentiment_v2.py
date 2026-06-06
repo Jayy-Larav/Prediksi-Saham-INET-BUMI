@@ -126,11 +126,11 @@ class RealNewsAPI:
             print(f"  ❌ API request failed: {str(e)[:60]}")
             return self.fetch_fallback(query, limit)
     
-    def fetch_fallback(self, query, limit=10):
-        """Fallback jika NewsAPI tidak tersedia, mengembalikan berita mock yang relevan"""
+    def fetch_fallback(self, query, limit=20):
+        """Fallback jika NewsAPI tidak tersedia, mengembalikan berita mock yang sangat detail dan bervariasi"""
         now = datetime.now()
         mock_database = [
-            # BUMI News
+            # ==================== BUMI NEWS ====================
             {
                 'source': 'CNBC Indonesia',
                 'title': 'Bumi Resources (BUMI) Catat Kenaikan Produksi Batubara di Kuartal I 2026',
@@ -171,7 +171,37 @@ class RealNewsAPI:
                 'publishedAt': (now - timedelta(hours=20)).strftime('%Y-%m-%dT%H:%M:%SZ'),
                 'author': 'Tim Analis Bareksa'
             },
-            # INET News
+            {
+                'source': 'IDX Channel',
+                'title': 'Grup Salim Perkuat Sinergi Operasional, Kinerja BUMI Diproyeksikan Tumbuh Signifikan',
+                'description': 'Langkah efisiensi biaya logistik yang diinisiasi manajemen baru bentukan Grup Salim sukses menekan cost of production BUMI secara masif.',
+                'content': 'Langkah efisiensi biaya logistik yang diinisiasi manajemen baru bentukan Grup Salim sukses menekan cost of production BUMI secara masif.',
+                'url': 'https://www.idxchannel.com/market-news/grup-salim-bumi-sinergi',
+                'image': '',
+                'publishedAt': (now - timedelta(hours=28)).strftime('%Y-%m-%dT%H:%M:%SZ'),
+                'author': 'IDX Reporter'
+            },
+            {
+                'source': 'Investor Daily',
+                'title': 'BUMI Siap Ekspor Batubara Rendah Abu ke India dan Jepang Guna Amankan Margin laba',
+                'description': 'Pihak manajemen BUMI menyebutkan kontrak baru pengapalan batubara berkalori tinggi telah diteken untuk kuartal mendatang.',
+                'content': 'Pihak manajemen BUMI menyebutkan kontrak baru pengapalan batubara berkalori tinggi telah diteken untuk kuartal mendatang.',
+                'url': 'https://investor.id/market/bumi-ekspor-india-jepang',
+                'image': '',
+                'publishedAt': (now - timedelta(hours=36)).strftime('%Y-%m-%dT%H:%M:%SZ'),
+                'author': 'Investor Research'
+            },
+            {
+                'source': 'Market Bisnis',
+                'title': 'Tekanan Beban Bunga Berkurang, Struktur Keuangan BUMI Semakin Sehat',
+                'description': 'Pelunasan utang restrukturisasi secara bertahap membuat laba bersih BUMI berpeluang tumbuh positif di atas rata-rata industri batubara nasional.',
+                'content': 'Pelunasan utang restrukturisasi secara bertahap membuat laba bersih BUMI berpeluang tumbuh positif di atas rata-rata industri batubara nasional.',
+                'url': 'https://www.bisnis.com/market/keuangan-bumi-sehat',
+                'image': '',
+                'publishedAt': (now - timedelta(hours=48)).strftime('%Y-%m-%dT%H:%M:%SZ'),
+                'author': 'Bisnis Editor'
+            },
+            # ==================== INET NEWS ====================
             {
                 'source': 'Yahoo Finance',
                 'title': 'Indonesia Energy (INET) Commences New Oil Well Drilling Operations in Kruh Block',
@@ -211,6 +241,36 @@ class RealNewsAPI:
                 'image': '',
                 'publishedAt': (now - timedelta(hours=22)).strftime('%Y-%m-%dT%H:%M:%SZ'),
                 'author': 'Bloomberg News'
+            },
+            {
+                'source': 'Oil & Gas Journal',
+                'title': 'Indonesia Energy (INET) Moves Closer to Commercial Gas Production Phase',
+                'description': 'The company announced successful flow tests on its latest exploratory wells, marking a massive milestone toward domestic gas distribution contracts.',
+                'content': 'The company announced successful flow tests on its latest exploratory wells, marking a massive milestone toward domestic gas distribution contracts.',
+                'url': 'https://www.ogj.com/exploration/inet-commercial-gas',
+                'image': '',
+                'publishedAt': (now - timedelta(hours=30)).strftime('%Y-%m-%dT%H:%M:%SZ'),
+                'author': 'OGJ Editors'
+            },
+            {
+                'source': 'S&P Global Platts',
+                'title': 'INET Secured High-Value Offtake Agreements with National Distribution Partners',
+                'description': 'New strategic contracts ensure stable revenue stream for Indonesia Energy Corp starting next quarter, significantly boosting positive investor sentiment.',
+                'content': 'New strategic contracts ensure stable revenue stream for Indonesia Energy Corp starting next quarter, significantly boosting positive investor sentiment.',
+                'url': 'https://www.spglobal.com/platts/inet-offtake-agreement',
+                'image': '',
+                'publishedAt': (now - timedelta(hours=42)).strftime('%Y-%m-%dT%H:%M:%SZ'),
+                'author': 'Platts Analytics'
+            },
+            {
+                'source': 'E&P Magazine',
+                'title': 'Technological Advancements in kruh Block Boost drilling Efficiency for INET',
+                'description': 'By deploying advanced rotary steerable systems, INET has reduced drilling times by 15%, lowering overall exploration costs.',
+                'content': 'By deploying advanced rotary steerable systems, INET has reduced drilling times by 15%, lowering overall exploration costs.',
+                'url': 'https://www.epmag.com/technology/inet-drilling-efficiency',
+                'image': '',
+                'publishedAt': (now - timedelta(hours=54)).strftime('%Y-%m-%dT%H:%M:%SZ'),
+                'author': 'E&P Reporter'
             }
         ]
         
