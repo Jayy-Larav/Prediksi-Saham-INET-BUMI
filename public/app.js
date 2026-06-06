@@ -40,7 +40,8 @@ async function fetchAllData() {
     logConsole('Fetching info from backend APIs...');
     
     // 1. Fetch stock info
-    const infoRes = await fetch('/api/stock_info');
+    const t = new Date().getTime();
+    const infoRes = await fetch(`/api/stock_info?t=${t}`);
     state.stockInfo = await infoRes.json();
     
     // Set live prices display in Control Panel
@@ -52,14 +53,14 @@ async function fetchAllData() {
     }
 
     // 2. Fetch historical data for both stocks
-    const bumiHistRes = await fetch('/api/historical?symbol=BUMI');
+    const bumiHistRes = await fetch(`/api/historical?symbol=BUMI&t=${t}`);
     state.historicalData.BUMI = await bumiHistRes.json();
     
-    const inetHistRes = await fetch('/api/historical?symbol=INET');
+    const inetHistRes = await fetch(`/api/historical?symbol=INET&t=${t}`);
     state.historicalData.INET = await inetHistRes.json();
 
     // 3. Fetch predictions
-    const predRes = await fetch('/api/predictions');
+    const predRes = await fetch(`/api/predictions?t=${t}`);
     const rawPreds = await predRes.json();
     state.predictions = rawPreds.map(item => ({
       ...item,
@@ -71,18 +72,18 @@ async function fetchAllData() {
     }));
 
     // 4. Fetch sentiment records
-    const sentRes = await fetch('/api/sentiment');
+    const sentRes = await fetch(`/api/sentiment?t=${t}`);
     state.sentiment = await sentRes.json();
 
     // 5. Fetch news for both
-    const bumiNewsRes = await fetch('/api/news?symbol=BUMI');
+    const bumiNewsRes = await fetch(`/api/news?symbol=BUMI&t=${t}`);
     state.news.BUMI = await bumiNewsRes.json();
     
-    const inetNewsRes = await fetch('/api/news?symbol=INET');
+    const inetNewsRes = await fetch(`/api/news?symbol=INET&t=${t}`);
     state.news.INET = await inetNewsRes.json();
 
     // 6. Fetch evaluation metrics
-    const evalRes = await fetch('/api/evaluation');
+    const evalRes = await fetch(`/api/evaluation?t=${t}`);
     state.evaluation = await evalRes.json();
 
     logConsole('API data successfully loaded.');
