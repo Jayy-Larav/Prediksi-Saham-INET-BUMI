@@ -853,6 +853,15 @@ async function runNewsFetch() {
         });
       }
       await fetchAllData();
+
+      // Scroll smoothly to the news section and briefly highlight it
+      const newsSection = document.getElementById('newsSectionRow');
+      if (newsSection) {
+        newsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        newsSection.style.transition = 'box-shadow 0.4s ease';
+        newsSection.style.boxShadow = '0 0 0 2px var(--color-bumi), 0 0 32px rgba(234,179,8,0.3)';
+        setTimeout(() => { newsSection.style.boxShadow = ''; }, 2000);
+      }
     } else {
       logConsole(`Failed fetching news: ${result.stderr}`, true);
     }
