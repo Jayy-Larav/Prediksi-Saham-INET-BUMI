@@ -179,9 +179,11 @@ class RealNewsAPI:
                 
         all_articles.extend(newsapi_articles)
         
-        # 3. Selalu tambahkan data fallback mock agar feed penuh dan terisi informasi lokal relevan
-        fallback_articles = self.fetch_fallback(query, limit=limit)
-        all_articles.extend(fallback_articles)
+        # 3. Gunakan fallback mock data hanya jika tidak ada berita sama sekali dari API
+        if not newsapi_articles and not finnhub_articles:
+            print(f"  ⚠️ Tidak ada berita dari API untuk query '{query}'. Menggunakan fallback mock data.")
+            fallback_articles = self.fetch_fallback(query, limit=limit)
+            all_articles.extend(fallback_articles)
         
         # Hapus duplikasi berdasarkan judul artikel
         unique_articles = {}
