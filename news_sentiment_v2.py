@@ -260,7 +260,7 @@ class RealSentimentAnalyzer:
         }
     
     def analyze_text(self, text):
-        """Analyze sentiment with multiple metrics"""
+        """Analyze sentiment with multiple metrics, including Indonesian and financial keyword detection"""
         
         if not text or len(text.strip()) < 5:
             return {
@@ -271,11 +271,44 @@ class RealSentimentAnalyzer:
             }
         
         try:
-            blob = TextBlob(str(text))
+            text_lower = text.lower()
             
-            # Get polarity & subjectivity
-            polarity = blob.sentiment.polarity          # -1 to 1
-            subjectivity = blob.sentiment.subjectivity  # 0 to 1
+            # 1. Base polarity from TextBlob
+            blob = TextBlob(str(text))
+            polarity = blob.sentiment.polarity
+            subjectivity = blob.sentiment.subjectivity
+            
+            # 2. Keyword matching for Indonesian and Financial English terms
+            pos_words = [
+                'kenaikan', 'naik', 'menguat', 'bullish', 'laba', 'untung', 'positif', 'kinerja baik', 
+                'growth', 'surge', 'boost', 'expand', 'positive', 'gain', 'jump', 'soar', 'optimis', 'optimism',
+                'rebound', 'meningkat', 'apresiasi', 'peningkatan'
+            ]
+            neg_words = [
+                'penurunan', 'turun', 'melemah', 'bearish', 'rugi', 'negatif', 'merosot', 'anjlok',
+                'drop', 'slump', 'decline', 'negative', 'loss', 'fall', 'plunge', 'warn', 'leakage',
+                'lemah', 'depresiasi'
+            ]
+            
+            pos_count = sum(1 for w in pos_words if w in text_lower)
+            neg_count = sum(1 for w in neg_words if w in text_lower)
+            
+            # Adjust polarity based on keyword search
+            keyword_score = 0.0
+            if pos_count > 0 or neg_count > 0:
+                keyword_score = (pos_count - neg_count) / max(pos_count + neg_count, 1)
+                # Cap the keyword influence to [-0.8, 0.8]
+                keyword_score = max(min(keyword_score * 0.5, 0.8), -0.8)
+            
+            # Combine TextBlob polarity and keyword score
+            if polarity == 0.0:
+                polarity = keyword_score
+            else:
+                # Weighted average: 40% TextBlob, 60% keywords
+                polarity = 0.4 * polarity + 0.6 * keyword_score
+                
+            # Clamp polarity to [-1.0, 1.0]
+            polarity = max(min(polarity, 1.0), -1.0)
             
             # Determine sentiment class
             if polarity > SENTIMENT_THRESHOLDS['STRONG_POSITIVE']:
@@ -453,23 +486,30 @@ class NewsDataStore:
             pd.DataFrame(columns=['timestamp', 'stock', 'sentiment', 'confidence', 'score', 'total_articles']).to_csv(self.sentiment_file, index=False)
     
     def save_articles(self, articles):
-        """Save articles to CSV"""
+        """Save articles to CSV with sentiment analysis"""
+        analyzer = RealSentimentAnalyzer()
         rows = []
         for article in articles:
+            text = (article.get('title', '') + ' ' + article.get('description', '')).strip()
+            analysis = analyzer.analyze_text(text)
+            
+            # Use article published date if available, otherwise now
+            pub_date = article.get('publishedAt') or datetime.now().isoformat()
+            
             rows.append({
-                'timestamp': datetime.now().isoformat(),
+                'timestamp': pub_date,
                 'source': article.get('source', 'Unknown'),
                 'title': article.get('title', ''),
                 'description': article.get('description', ''),
                 'url': article.get('url', ''),
-                'sentiment': 'N/A',
-                'polarity': 0.0
+                'sentiment': analysis['sentiment'],
+                'polarity': analysis['polarity']
             })
         
         df_new = pd.DataFrame(rows)
         df_existing = pd.read_csv(self.news_file)
         df_combined = pd.concat([df_existing, df_new], ignore_index=True)
-        df_combined = df_combined.drop_duplicates(subset=['title'], keep='first')  # Remove duplicates
+        df_combined = df_combined.drop_duplicates(subset=['title'], keep='last')  # Keep the latest analyzed article
         df_combined.to_csv(self.news_file, index=False)
     
     def save_sentiment(self, stock, sentiment_result, confidence):

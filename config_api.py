@@ -15,6 +15,14 @@ from datetime import datetime
 NEWSAPI_KEY = os.environ.get('NEWSAPI_KEY', "")  # Safe: environment variable only
 
 # ============================================================================
+# STOCK METADATA (BUMI, INET)
+# ============================================================================
+STOCK_METADATA = {
+    'BUMI': {'symbol': 'BUMI.JK', 'name': 'Bumi Resources', 'sector': 'Coal Mining'},
+    'INET': {'symbol': 'INET.JK', 'name': 'Indonesia Energy', 'sector': 'Oil & Gas Services'}
+}
+
+# ============================================================================
 # ALTERNATIVE NEWS SOURCES (Jika NewsAPI tidak tersedia)
 # ============================================================================
 ALTERNATIVE_SOURCES = [
