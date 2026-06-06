@@ -480,11 +480,12 @@ function updateNewsFeed() {
   });
 }
 
-// Render Model Metrics Table
+// Render Model Metrics Table (panel removed from UI — kept as no-op guard)
 function updateEvaluationTable() {
   const tbody = document.getElementById('evaluationTableBody');
+  if (!tbody) return; // evaluation panel has been removed from the UI
   tbody.innerHTML = '';
-  
+
   if (!state.evaluation || Object.keys(state.evaluation).length === 0) {
     tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No evaluation metrics loaded.</td></tr>';
     return;
@@ -781,7 +782,6 @@ function updateUI() {
   updateChart();
   updateSentimentPanel();
   updateNewsFeed();
-  updateEvaluationTable();
   updateTechnicalSignals();
   updateIDXSessionStatus();
 }
