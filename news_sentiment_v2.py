@@ -503,7 +503,9 @@ class RealSentimentAnalyzer:
         
         for article in articles:
             # Combine title + description untuk lebih complete analysis
-            text = (article.get('title', '') + ' ' + article.get('description', '')).strip()
+            title = article.get('title') or ''
+            desc = article.get('description') or ''
+            text = (title + ' ' + desc).strip()
             
             analysis = self.analyze_text(text)
             sentiments[analysis['sentiment']] += 1
@@ -618,7 +620,9 @@ class NewsDataStore:
         analyzer = RealSentimentAnalyzer()
         rows = []
         for article in articles:
-            text = (article.get('title', '') + ' ' + article.get('description', '')).strip()
+            title = article.get('title') or ''
+            desc = article.get('description') or ''
+            text = (title + ' ' + desc).strip()
             analysis = analyzer.analyze_text(text)
             
             # Use article published date if available, otherwise now
